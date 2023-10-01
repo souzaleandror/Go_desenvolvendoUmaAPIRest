@@ -9,6 +9,9 @@ Error = package github.com/lib/pq is not a main package
 go env -w GO111MODULE=off
 go get github.com/lib/pq
 go mod init
+
+lsof -i:8080
+Kill -9
 ```
 
 @01-Json, Request, Response e Go
@@ -406,3 +409,137 @@ Entendemos o que é uma API;
 Realizamos uma requisição GET retornando um Json.
 Na próxima aula:
 Vamos adicionar um ID nas personalidades e conectar nossa aplicação com um banco de dados no Docker!
+
+#### 30/09/2023
+
+@02-Roteador, recursos por ID e Docker
+
+@@01
+Projeto da aula anterior
+PRÓXIMA ATIVIDADE
+
+Aqui você pode baixar o zip da aula 01 ou acessar os arquivos no Github!
+
+https://github.com/alura-cursos/api-go-rest/archive/refs/heads/aula_1.zip
+
+https://github.com/alura-cursos/api-go-rest
+
+@@02
+Novo roteador
+
+[00:00] Conseguimos exibir tanto a personalidade 1 quanto a personalidade 2 com esses exemplos que fizemos com o nome mocado, que não estamos pegando no banco de dados e nem nada só exibindo na tela mesmo. Isso ficou legal, só que vamos evoluir um pouco mais a nossa aplicação.
+[00:16] Vamos supor que eu coloque aqui em personalidades barra 1, “localhost:8000/api/personalidades/1”, eu quero exibir só ID 1. Se eu fizer isso dessa forma ele não vai encontrar ele vai abrir novamente a página Home Page porque ele não tem esse caminho ainda.
+
+[00:30] Para conseguirmos manipular esse novo endpoint que queremos criar vamos precisar configurar esses nossos valores que fazemos. Em outras palavras, vamos precisar de roteador que vai conseguir pegar essas informações que passamos para os nossos endpoints, como ID 1 ou ID 2.
+
+[00:47] Pensando nisso vamos usar um pacote chamado “Gorilla Mux” e vai abrir esse primeiro link do GitHub mesmo. Ele é uma rota poderosa de HTTP e URL, é justamente o que precisamos. Vamos instalar o pacote gorilla/mux e ver como conseguimos utilizá-lo.
+
+[01:14] Aqui na documentação eu sugiro que você depois dê uma lida passo a passo, vai discorrendo para entender como funciona essa implementação do gorilla/mux. E vamos ver na prática como conseguimos usá-lo.
+
+[01:29] A primeira coisa, para conseguirmos instalá-lo temos esse comando aqui com a configuração correta. Eu vou clicar nesse ícone para copiar ou posso selecionar tudo aqui também, utilizar as teclas "Ctrl + C" para copiar. Vamos incorporar em nosso projeto o gorilla/mux.
+
+[01:45] Para isso eu vou parar o nosso servidor, limpo a tela utilizando as teclas "Ctrl + L", vou utilizar as teclas "Ctrl + C" e "Ctrl + V". go get -u github.com/gorilla/mux, dou um "Enter" e vai instalar esse pacote. Se formos aqui em nosso “go.mod” repare que ele falou que temos o gorilla/mux aqui também no nosso pacote como dependência desse projeto. Isso ficou ótimo, é justamente o que queríamos.
+
+[02:20] Para conseguirmos utilizar agora o gorilla/mux é muito simples, vamos lá na nossa rota e vou criar uma instância dele que vou chamar de r, r := mux.NewRouter(). Ou seja, ele vai criar uma nova rota, um novo mapeamento de rotas.
+
+[03:00] A única coisa que vou fazer vai ser colocar essa instancia que temos aqui na frente: r.http.HandleFunc(), r.http.HandleFunc() e aqui quando subimos o nosso servidor no lugar de deixar o new eu vou passar a nossa instancia. Aqui não vamos precisar do r.http.HandleFunc, vamos usar apenas o r.HandleFunc() do gorilla/mux.
+
+package routes
+
+import (
+    "log"
+    "net/http"
+
+    "github.com/gorilla/mux"
+    "github.com/guilhermeonrails/go-rest-api/controllers"
+)
+
+func HandleResquest() {
+    r := mux.NewRouter()
+    r.HandleFunc("/", controllers.Home)
+    r.HandleFunc("/api/personalidades", controllers.TodasPersonalidades)
+    log.Fatal(http.ListenAndServe(":8000", r))
+}COPIAR CÓDIGO
+[03:30] Vamos executar mais uma vez o nosso projeto e limpar o terminal. go run main.go. Se viermos aqui vamos que esse daqui esse daqui está carregando certinho e se eu coloco lá na nossa pasta no “localhost:8000” abre a página home certinho. Tudo está funcionando como queríamos.
+
+[03:50] No lugar de usar o default, o mux default que vem do global estamos utilizando o mux com NewRouter() do gorilla/mux. Lembra que eu falei, agora conseguimos manipular melhor as nossas rotas e as nossas requisições.
+
+[04:05] Na sequência, veremos como fazemos para conseguirmos criar um endpoint para visualizar o ID passado. Se colocamos o id1 aqui queremos exibir só a personalidade 1 ou só a personalidade 2 com id2 e assim por diante.
+
+@@07
+Exibindo uma personalidade
+PRÓXIMA ATIVIDADE
+
+Uma pessoa não conseguiu exibir uma personalidade por ID e resolveu pedir a sua ajuda. Veja o código que a pessoa compartilhou:
+models.go
+package models
+
+type Personalidade struct {
+        Id       int    `json:"id"`
+        Nome     string `json:"nome"`
+        Historia string `json:"historia"`
+}
+
+var Personalidades []PersonalidadeCOPIAR CÓDIGO
+routes.go
+func HandleResquest() {
+        r := mux.NewRouter()
+        r.HandleFunc("/", controllers.Home)
+        r.HandleFunc("/api/personalidades", controllers.TodasPersonalidades).Methods("Get")
+        r.HandleFunc("/api/personalidades/{ID}", controllers.RetornaUmaPersonalidade).Methods("Get")
+        log.Fatal(http.ListenAndServe(":8000", r))
+}COPIAR CÓDIGO
+controllers.go
+func RetornaUmaPersonalidade(w http.ResponseWriter, r *http.Request) {
+        vars := mux.Vars(r)
+        id := vars["id"]
+
+        for _, personalidade := range models.Personalidades {
+                if strconv.Itoa(personalidade.Id) == id {
+                        json.NewEncoder(w).Encode(personalidade)
+                }
+        }
+}COPIAR CÓDIGO
+Analisando os trechos de código acima, podemos afirmar que:
+
+Na função HandleResquest do arquivo routes.go, o método da rota deveria ser Post e não Get.
+ 
+Incorreto. O método GET solicita a representação de um recurso específico. Requisições utilizando o método GET devem retornar apenas um recurso, seja ele com todas as personalidades ou apenas uma. Já o método POST é utilizado para submeter uma entidade a um recurso específico, frequentemente causando uma mudança no estado do recurso ou efeitos colaterais no servidor. Ou seja, usamos o método POST para criar um novo recurso, no nosso caso, uma nova personalidade.
+Alternativa correta
+O erro se encontra na comparação dos IDs, especificamente neste trecho de código if strconv.Itoa(personalidade.Id) == id, onde o personalidade.Id deveria ter a letra i em minúsculo para a comparação ter efeito.
+ 
+Alternativa incorreta. Erro não se encontra neste trecho de código. Toda variável pública que importamos de outro pacote, deve ser identificada pela primeira letra maiúscula.
+Alternativa correta
+A função do arquivo controllers.go que retorna uma personalidade, não encontrará o ID das variáveis de rota que podem ser recuperadas chamando mux.Vars.
+ 
+Alternativa correta! Isso! Observe que o parâmetro da rota /api/personalidades/{ID} expõe uma variável chamada ID, com todas as letras maiúsculas e a função que retorna todas as personalidades busca uma variável chamada id, com letras minúsculas.
+
+@@08
+Faça como eu fiz
+PRÓXIMA ATIVIDADE
+
+Chegou a hora de você seguir todos os passos realizados por mim durante esta aula. Caso já tenha feito isso, excelente. Se ainda não fez, é importante que você implemente o que foi visto no vídeo para poder continuar com a próxima aula, que tem como pré-requisito todo o código escrito até o momento.
+Caso não encontre uma solução nas perguntas feitas por alunos e alunas deste curso, para comunicar erros e tirar dúvidas de forma eficaz, clique neste link e saiba como utilizar o fórum da Alura .
+
+https://cursos.alura.com.br/comunicando-erros-e-tirando-duvidas-em-foruns-c19
+
+Não tem dúvidas? Que tal ajudar alguém no fórum?
+
+: )
+
+@@09
+O que aprendemos?
+PRÓXIMA ATIVIDADE
+
+Nesta aula:
+Adicionamos o Gorilla Mux como novo roteador da nossa aplicação;
+Retornamos um único recurso através do id;
+Criamos uma imagem do banco de dados Postgres com Docker e executamos um script SQL que adicionava alguns registros em nosso banco de dados.
+Na próxima aula:
+Vamos aprender como conectar nosso projeto com banco de dados e exibir as informações armazenadas utilizando um ORM!
+
+https://github.com/alura-cursos/api-go-rest/blob/aula_2/routes/routes.go
+
+https://github.com/alura-cursos/api-go-rest/blob/aula_2/controllers/controllers.go
+
+https://github.com/alura-cursos/api-go-rest/blob/aula_2/migration/docker-database-initial.sql

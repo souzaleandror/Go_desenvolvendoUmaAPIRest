@@ -1,13 +1,14 @@
 package routes
 
-import ( 
-	"net/http"
+import (
 	"log"
-	"api-go-rest/controllers"
+	"net/http"
+
 	"github.com/gorilla/mux"
+	"github.com/guilhermeonrails/go-rest-api/controllers"
 )
 
-func HandleRequest() {
+func HandleResquest() {
 	r := mux.NewRouter()
 	r.HandleFunc("/", controllers.Home)
 	r.HandleFunc("/api/personalidades", controllers.TodasPersonalidades).Methods("Get")

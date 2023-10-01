@@ -1,12 +1,13 @@
 package controllers
 
-import ( 
-	"net/http"
-	"fmt"
+import (
 	"encoding/json"
-	"api-go-rest/models"
+	"fmt"
+	"net/http"
 	"strconv"
+
 	"github.com/gorilla/mux"
+	"github.com/guilhermeonrails/go-rest-api/models"
 )
 
 func Home(w http.ResponseWriter, r *http.Request) {
