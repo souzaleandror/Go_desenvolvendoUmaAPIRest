@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"api-go-rest/routes"
 	"api-go-rest/models"
-	"api-go-rest/database"
 )
 
 func main() {
@@ -14,7 +13,6 @@ func main() {
 		{Id: 2, Nome: "Leo2", Historia: "test2"},
 	}
 
-	database.ConnectandoComBancoDeDados()
 
 	fmt.Println("Iniciando o servidor Rest com GO")
 	routes.HandleRequest()

@@ -543,3 +543,251 @@ https://github.com/alura-cursos/api-go-rest/blob/aula_2/routes/routes.go
 https://github.com/alura-cursos/api-go-rest/blob/aula_2/controllers/controllers.go
 
 https://github.com/alura-cursos/api-go-rest/blob/aula_2/migration/docker-database-initial.sql
+
+#### 02/10/2023
+
+@03-Conexão com banco e exibindo os dados
+
+@@01
+Projeto da aula anterior
+PRÓXIMA ATIVIDADE
+
+Aqui você pode baixar o zip da aula 02 ou acessar os arquivos no Github!
+
+https://github.com/alura-cursos/api-go-rest/archive/refs/heads/aula_2.zip
+
+https://github.com/alura-cursos/api-go-rest/tree/aula_2
+
+@@02
+Sobre o GORM
+
+[00:00] O próximo passo é conseguirmos conectar com o banco de dados e exibir as personalidades que temos registradas lá. Para isso vamos utilizar um ORM do GO para conseguirmos pedir as informações para retornar um registro do banco de dados ou mostrar todas as personalidades, criar uma personalidade de uma forma mais simples.
+[00:22] No curso anterior não usamos o ORM então escrevemos SQL a mão. Nesse curso vamos utilizar o Gorm, vamos digitar aqui no buscador do Google "gorm orm" e ele vai trazer essa opção aqui "GORM - A fantástica biblioteca de ORM para Golang".
+
+[00:40] Para instalarmos o gorm na nossa aplicação vamos rodar esse comando aqui go get -u gorm.io/gorm. Vou rodar aqui: go get -u gorm.io/gorm, dou um "Enter" e ele está trazendo o Gorm para a nossa aplicação.
+
+[00:58] Agora vamos ver na documentação como é que fazemos para conseguir conectar com o banco de dados. Vou colocar aqui "Connecting to a Database" e temos a opção para ele conectar com MySQL, PostgreSQL, SQLite e o Server. Vamos usar o postgres.
+
+[01:15] Indo um pouco para baixo repare que ele tem sempre um driver de conexão, ele tem o driver de conexão e ele fala para sempre inicializarmos uma variável apontando para Gorm.db, quando queremos já tem um banco de dados e queremos conectar com esse banco de dados. É justamente o que queremos.
+
+[01:42] Já existe o banco de dados e queremos fazer a conexão com esse banco de dados. Para isso eu vou criar uma pasta chamada “database” e dentro dela um arquivo chamado “db.go”. Esse arquivo “db.go” vai ser responsável por conectar com o banco de dados.
+
+[01:59] Vou falar qual é o pacote database, package database e vamos precisar de duas variáveis que já vou criar aqui. A primeira variável vou chamar de DB, ambos maiúsculas, que vai apontar para *gorm. Aqui temos um ponto importante, só de eu digitar gorm aparece aqui "gorm.io/gorm" e o "gorm.io.jinzuh" desses dois.
+
+[02:22] Vamos usar a primeira opção, "gorm.io/gorm". Dou um "Enter" nesse aqui e repare que ele já fez o import do gorm. Tem várias opções aqui vamos colocar ponto DB, seguindo a documentação. var { DB *gorm.DB }. Ele mostra aqui que se já temos um banco de dados, quando já temos uma conexão existente usamos um apontador para gorm DB.
+
+[02:45] Outra coisa que vamos precisar é do driver do postgres também. Eu vou vir aqui e vou colocar go get gorm.io/driver/postgres no terminal, dou um "Enter" e ele vai nos trazer a versão do postgres para utilizarmos.
+
+[03:01] Outra variável que vamos precisar também é uma variável de erro, err error. Agora eu vou criar uma função que vou chamar de func ConectaComBancodeDados() e essa função vai ser a seguinte, vou seguindo a documentação mesmo.
+
+[03:23] Existe uma linha, uma string de conexão, vou utilizar as teclas "Ctrl + C" para copiar essa linha aqui e vou colar aqui utilizando as teclas "Ctrl + V". Vou mudar o nome, vou chamar de string de conexão. stringDeConexao := "host=localhost user=gorm password=gorm dbname=gorm port=9920 sslmode=disableTimeZone=Asia/Shanghai".
+
+[03:39] Vamos ver como essa linha está. Temos o host que é igual a localhost, está certo. O user igual tem que ser igual a root e não gorm. Lembrando que esse nome root estamos trazendo lá do nosso “docker-compose”, user=root, password=root e o banco de dados root também. Com base nisso vamos colocar user=root, o password=root também e o banco de dados root.
+
+[04:03] A porta que estamos utilizando é a 5432, o sslmode vou deixar desativado e vou tirar aqui o TimeZone. stringDeConexao := "host=localhost user=root password=root dbname=root. port=5432 sslmode=disable". Salvei essa string e agora vou precisar conectar com o Gorm, conectar essa string que fizemos com o banco de dados.
+
+[04:21] Vou colocar essas duas variáveis que criamos tanto o DB quanto o erro e vou colocar apenas o igual, não tem nesse daqui os dois pontos porque já inicializamos essas nossas variáveis indicando o tipo delas, DB, err =.
+
+[04:35] Vou falar assim DB, err = gorm.Open e aqui dentro vou pedir para o postgres abrir para mim, postgres. e temos algumas opções aqui, vou colocar a opção Open() e ele vai abrir também. O postgres vai ser carregado com base na nossa stringDeConexao. DB, err = gorm.Open(postgres.Open(stringDeConexao).
+
+[04:58] Eu salvo, está tudo certo e a única coisa que precisamos fazer é verificar se temos algum erro. Se tivermos algum erro significa que não conseguimos conectar com o banco de dados, eu vou colocar aqui log.Panic() para visualizarmos a mensagem erro ao conectar com banco de dados. log.Panic("Erro ao conectar com banco de dados").
+
+package database
+
+import (
+    "log"
+
+    "gorm.io/driver/postgres"
+    "gorm.io/gorm"
+)
+
+var (
+    DB  *gorm.DB
+    err error
+)
+
+func ConectaComBancoDeDados() {
+    stringDeConexao := "host=localhost user=root password=root dbname=root port=5432 sslmode=disable"
+    DB, err = gorm.Open(postgres.Open(stringDeConexao))
+    if err != nil {
+        log.Panic("Erro ao conectar com banco de dados")
+    }
+}COPIAR CÓDIGO
+[05:20] Salvando essa linha parece que está tudo ok e eu vou pedir para conectar com o banco de dados lá na nossa função main(). Na nossa função main criamos os nossos modelos, iniciamos o servidor. Eu vou deixar esses modelos por enquanto e vou colocar lá de database, vou dar um "Enter" aqui para ele importar o database e ele já nos trouxe guilherme/database que acabamos de criar e eu quero conectar com o banco de dados, database.ConectaComBancoDeDados.
+
+package main
+
+import (
+    "fmt"
+
+    "github.com/guilhermeonrails/go-rest-api/database"
+    "github.com/guilhermeonrails/go-rest-api/models"
+    "github.com/guilhermeonrails/go-rest-api/routes"
+)
+
+func main() {
+    models.Personalidades = []models.Personalidade{
+        {Id: 1, Nome: "Nome 1", Historia: "Historia 1"},
+        {Id: 2, Nome: "Nome 2", Historia: "Historia 2"},
+    }
+    database.ConectaComBancoDeDados()
+    fmt.Println("Iniciando o servidor Rest com Go")
+    routes.HandleResquest()
+}COPIAR CÓDIGO
+[05:49] Salvando eu vou limpar o meu terminal e vou rodar o nosso projeto go run main.go, dei um "Enter" e não recebemos nenhuma mensagem. Repare que conectamos com o banco de dados e depois iniciamos o nosso servidor. Estamos conectados com o banco de dados que estamos rodando no Docker.
+
+[06:13] O próximo passo é no lugar de exibirmos as personalidades que criamos aqui apenas de teste, eu quero exibir de fato as personalidades que estão no banco de dados.
+
+@@03
+Controller e GORM
+
+[00:00] Vamos alterar o nosso controller para que ele exiba as personalidades que temos cadastrada no banco de dados já que já estamos conectados.
+[00:10] A primeira coisa que vamos fazer vai ser alterar o nosso controller, vou vir aqui "controller > controllers.go" e repare o que fazemos, temos todas as personalidades que mocamos lá no nosso main() para gerar esse nosso exemplo. Não é o que queremos, queremos esses dados que estão aqui.
+
+[00:32] Para exibir esses dados a primeira coisa que vamos fazer vai ser criar uma variável do tipo lista de personalidades aqui dentro. Vamos fazer passo a passo. Eu vou criar uma nova variável que chamar de p que vai ser do tipo Personalidade, uma lista que vem lá de models.Personalidades. var p []models.Personalidade.
+
+[00:52] Isso significa que essa minha variável p vai ser uma lista com base em todas as minhas personalidades. Agora que eu já tenho essa lista de personalidades eu vou pedir para o meu database que é a nossa instância do GORM, encontrar todas as personalidades que ele tem e para ele encontrar vamos editar Find() que vai encontrar todas as personalidades. database.DB.Find().
+
+[01:20] Para ele conseguir saber o que ele está buscando vamos passar o endereço de memória de p. O p é uma lista, o p é um array de personalidades e ele vai encontrar todas essas listas de personalidades passando o endereço de memória de p. database.DB.Find(&p).
+
+[01:42] Depois disso, no lugar de visualizarmos o models.personalidade que temos lá do main() vamos visualizar o p. json.NewEncoder(w).Encode(p). Eu vou testar isso aqui para ver porque parece que foi muito simples isso daqui. Lembra do curso passado que tínhamos que criar para encontrar todos e escrevia select asterisco from personalidades e tudo aquilo, não precisamos. Com uma linha de código conseguimos conectar com o banco de dados e trazer todos eles.
+
+package controllers
+
+import (
+    "encoding/json"
+    "fmt"
+    "net/http"
+
+    "github.com/gorilla/mux"
+    "github.com/guilhermeonrails/go-rest-api/database"
+    "github.com/guilhermeonrails/go-rest-api/models"
+)
+
+func Home(w http.ResponseWriter, r *http.Request) {
+    fmt.Fprint(w, "Home Page")
+}
+
+func TodasPersonalidades(w http.ResponseWriter, r *http.Request) {
+    var p []models.Personalidade
+    database.DB.Find(&p)
+    json.NewEncoder(w).Encode(p)
+}
+
+func RetornaUmaPersonalidade(w http.ResponseWriter, r *http.Request) {
+    vars := mux.Vars(r)
+    id := vars["id"]
+
+    for _, personalidade := range models.Personalidades {
+        if strconv.Itoa(personalidade.Id) == id {
+            json.NewEncoder(w).Encode(personalidade)
+        }
+    }
+}COPIAR CÓDIGO
+[02:11] Vamos rodar go run main.go, ele conectou com o banco de dados e iniciou um servidor. Lembrando que o banco de dados precisa estar rodando no Docker, se o Docker não estiver ativo, não estiver funcionando não conseguimos conectar com o banco de dados.
+
+[02:36] O Docker está funcionando, iniciamos o servidor e no banco de dados temos Deodato e a Carmela Dutra e aqui temos esses nomes de exemplo. Vou tirar esses dois, dar um “Enter” e olha lá, temos o Deodato e temos também a Carmela Dutra, aparecem esses dois dados.
+
+[02:58] Dessa forma, conseguimos trazer as informações que estão lá no banco de dados para a nossa API com GO. Isso fizemos através do GORM com essa linha de comando. Na sequência vamos alterar as nossas funcionalidades, principalmente essa que retorna uma determinada personalidade através do ID utilizando o GORM.
+
+@@04
+Buscando um recurso
+
+[00:00] O nosso projeto está até com um comportamento interessante. Quando pedimos para exibir todas as personalidades ele de fato exibe personalidades que fazem sentido para mim, o nome da rua, a história. Só que quando eu quero ver só a história do personagem 1 ele mostra Nome 1, Id: 1. Ou seja, ele está pegando os dados que mocamos lá no nosso main(), não faz muito sentido.
+[00:21] Eu quero colocar o 1 e exibir de fato a personalidade que está lá no nosso banco de dados com Id: 1. Para isso vamos pedir para o nosso ORM fazer isso.
+
+[00:32] Pegamos o valor dessa variável, temos aqui o valor dessa variável por Id, id := vars("id"), até aqui está tudo certo. O que vamos fazer agora? Nós criamos uma lista de personalidades para conseguirmos visualizar todas elas, nesse nosso caso vamos criar apenas uma personalidade, var p models.Personalidade. Vai ser apenas um, esse vai ser o tipo dela.
+
+[00:59] Eu vou tirar todas essas linhas aqui, tudo isso que fizemos eu vou fazer da seguinte forma: database.DB.First. O .First vai trazer a primeira referência que ele encontrar e o Id é algo único.
+
+[01:19] Aqui temos um ponto importante: queremos o endereço de memória de p, vou passar da mesma forma que fizemos para o outro, passar o endereço de memória de &p que é essa nossa variável aqui. Eu sei que você está buscando uma personalidade, mas qual personalidade específica? Eu preciso saber a outra informação que vai ser o id, eu vou passar aqui id. database.DB.First(&p, id)
+
+[01:43] Dessa forma eu vou falar assim: json.NewEncoder(w).Encode(p). Para o nosso código ficar ainda mais claro eu vou alterar, no lugar de p eu vou deixar personalidade para todos. var personalidade models.Personalidade, database.DB.First(&personalidade, id), json.NewEncoder(w).Encode(personalidade).
+
+[02:14] Vou salvar. Parece que está tudo funcionando, não precisamos fazer nenhuma alteração em nenhuma outra parte da nossa aplicação. A não ser fechar o nosso servidor GO e subir o nosso servidor GO para ver se está tudo ok.
+
+package controllers
+
+import (
+    "encoding/json"
+    "fmt"
+    "net/http"
+
+    "github.com/gorilla/mux"
+    "github.com/guilhermeonrails/go-rest-api/database"
+    "github.com/guilhermeonrails/go-rest-api/models"
+)
+
+func Home(w http.ResponseWriter, r *http.Request) {
+    fmt.Fprint(w, "Home Page")
+}
+
+func TodasPersonalidades(w http.ResponseWriter, r *http.Request) {
+    var p []models.Personalidade
+    database.DB.Find(&p)
+    json.NewEncoder(w).Encode(p)
+}
+
+func RetornaUmaPersonalidade(w http.ResponseWriter, r *http.Request) {
+    vars := mux.Vars(r)
+    id := vars["id"]
+    var personalidade models.Personalidade
+    database.DB.First(&personalidade, id)
+    json.NewEncoder(w).Encode(personalidade)
+}COPIAR CÓDIGO
+[02:28] Vou vir aqui na nossa aplicação no navegador, "/personalidades/1" quando eu dou um "Enter" agora sim, tenho o doutor Deodato. Quando eu coloco aqui a "/personalidade/2" ele mostra a Carmela Dutra, se eu coloco uma personalidade que não tenha, "/50" por exemplo, ele mostra tudo vazio.
+
+[02:43] Dessa forma, aos poucos vamos entendendo como funciona esse nosso ORM. O legal é que ele vai mostrando o que ele está encontrando, quais são os scripts que ele está executando para conseguir exibir todas as personalidades. Isso é muito bacana, é bem legal também para visualizarmos.
+
+[03:04] Vimos que usando o Find() buscamos todas as personalidades passando o endereço de memória da estrutura que temos, que queremos exibir e para retornarmos apenas uma utilizamos o DB.First para ele voltar passando o endereço de memória da personalidade, da pessoa que estamos buscando e o Id.
+
+@@05
+Go mod
+PRÓXIMA ATIVIDADE
+
+Conectamos nossa aplicação com banco de dados Postgres e adicionamos alguns módulos nesta aula. Podemos ver todos os módulos e pacotes usados até aqui no arquivo go.mod:
+module github.com/guilhermeonrails/go-rest-api
+
+go 1.15
+
+require (
+        github.com/gorilla/mux v1.8.0
+        gorm.io/driver/postgres v1.1.2
+        gorm.io/gorm v1.21.16 // indirect
+)COPIAR CÓDIGO
+Sabendo disso, analise as afirmações abaixo e marque a que está correta em relação aos módulos usados até aqui.
+
+A conexão do banco de dados com o GORM deve ser feita exclusivamente com o Docker. Caso contrário, a conexão não é possível.
+ 
+Alternativa correta
+O único banco de dados que o Gorm aceita é o Postgres.
+ 
+Alternativa correta
+O pacote gorilla/mux implementa um roteador de requisições e respostas para corresponder às solicitações de entrada ao seu respectivo manipulador ou handler.
+ 
+Alternativa correta! Certo! Ele encaminha o handler específico com base no método da requisição. Podemos ver esse exemplo no arquivo routes.go.
+
+https://github.com/alura-cursos/api-go-rest/blob/aula_2/routes/routes.go
+
+@@06
+Faça como eu fiz
+PRÓXIMA ATIVIDADE
+
+Chegou a hora de você seguir todos os passos realizados por mim durante esta aula. Caso já tenha feito isso, excelente. Se ainda não fez, é importante que você implemente o que foi visto no vídeo para poder continuar com a próxima aula, que tem como pré-requisito todo o código escrito até o momento.
+Caso não encontre uma solução nas perguntas feitas por alunos e alunas deste curso, para comunicar erros e tirar dúvidas de forma eficaz, clique neste link e saiba como utilizar o fórum da Alura .
+
+https://cursos.alura.com.br/comunicando-erros-e-tirando-duvidas-em-foruns-c19
+
+Não tem dúvidas? Que tal ajudar alguém no fórum?
+: )
+
+@@07
+O que aprendemos?
+PRÓXIMA ATIVIDADE
+
+Nesta aula:
+Instalamos o Gorm;
+Realizamos a conexão da API com banco de dados;
+Alteramos as funções do controller para exibir as informações do banco de dados.
+Na próxima aula:
+Vamos aprender como criar, editar e deletar uma personalidade!
