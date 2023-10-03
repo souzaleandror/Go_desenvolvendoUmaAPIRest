@@ -12,6 +12,8 @@ go mod init
 
 lsof -i:8080
 Kill -9
+
+react-scripts --openssl-legacy-provider start
 ```
 
 @01-Json, Request, Response e Go
@@ -1155,3 +1157,332 @@ Adicionamos um endpoint com método Delete para deletar uma personalidade e remo
 Adicionamos um endpoint com método Put para atualizar uma personalidade e alterá-la no banco de dados.
 Na próxima aula:
 Vamos adicionar informações no header informando o tipo de conteúdo da resposta, criar um middleware para evitar duplicidade de código e integrar front-end React para consumir nossa API Go!
+
+#####
+
+@05-Middleware e integração com front-end
+
+@@01
+Projeto da aula anterior
+
+Aqui você pode baixar o zip da aula 04 ou acessar os arquivos no Github!
+
+https://github.com/alura-cursos/api-go-rest/archive/refs/heads/aula_4.zip
+
+https://github.com/alura-cursos/api-go-rest/tree/aula_4
+
+@@02
+Content Type
+
+[00:00] A nossa API possui os comportamentos que esperamos, porém podemos deixá-la ainda melhor. Observa lá no Postman que quando vamos escrevendo com o raw indicando o JSON aparece esse sintaxe highlight que deixa bem bonita a nossa API. Aqui embaixo, vou fazer uma requisição GET para exibir todas as personalidades, dar um "Send", observe que ele fica com um formato estranho, não parece JSON com highlight bonito que temos ali.
+[00:28] Realmente não é. Por quê? Porque não indicamos na nossa API que o tipo de estrutura que vamos devolver da chamada, da requisição é um JSON. E uma das formas que temos para indicar qual vai ser o tipo do arquivo que queremos devolver, o tipo do arquivo do recurso que queremos devolver, é utilizando content-type. Falando assim: "olha, essa requisição, o conteúdo dela vai ser do tipo JSON".
+
+[00:55] É uma das formas que temos de fazer isso é assim: eu vou mostrar para vocês lá no "controllers.go", vamos alterar o nosso controle que devolve TodasPersonalidades. O que vou fazer? Vou colocar aqui na primeira linha através do Response Writer, w.Header(), ou seja, no cabeçalho da requisição eu quero setar, .Set(), uma informação.
+
+[01:22] Essa informação é o quê? É o "Content-type", "application/json". w.Header().Set("Content-type", "application/json"). O que isso vai fazer? Isso vai dizer assim, olha só: quando eu receber uma requisição para todas as personalidades, eu quero adicionar no cabeçalho da requisição que o tipo da nossa resposta vai ser um arquivo Json.
+
+package controllers
+
+import (
+    "encoding/json"
+    "fmt"
+    "net/http"
+
+    "github.com/gorilla/mux"
+    "github.com/guilhermeonrails/go-rest-api/database"
+    "github.com/guilhermeonrails/go-rest-api/models"
+)
+
+func Home(w http.ResponseWriter, r *http.Request) {
+    fmt.Fprint(w, "Home Page")
+}
+
+func TodasPersonalidades(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Content-type", "application/json")
+    var p []models.Personalidade
+    database.DB.Find(&p)
+    json.NewEncoder(w).Encode(p)
+}
+
+func RetornaUmaPersonalidade(w http.ResponseWriter, r *http.Request) {
+    vars := mux.Vars(r)
+    id := vars["id"]
+    var personalidade models.Personalidade
+    database.DB.First(&personalidade, id)
+    json.NewEncoder(w).Encode(personalidade)
+}
+
+func CriaUmaNovaPersonalidade(w http.ResponseWriter, r *http.Request) {
+    var novaPersonalidade models.Personalidade
+    json.NewDecoder(r.Body).Decode(&novaPersonalidade)
+    database.DB.Create(&novaPersonalidade)
+    json.NewEncoder(w).Encode(novaPersonalidade)
+}
+
+func DeletaUmaPersonalidade(w http.ResponseWriter, r *http.Request) {
+    vars := mux.Vars(r)
+    id := vars["id"]
+    var personalidade models.Personalidade
+    database.DB.Delete(&personalidade, id)
+    json.NewEncoder(w).Encode(personalidade)
+}
+
+func EditaPersonalidade(w http.ResponseWriter, r *http.Request) {
+    vars := mux.Vars(r)
+    id := vars["id"]
+    var personalidade models.Personalidade
+    database.DB.First(&personalidade, id)
+    json.NewDecoder(r.Body).Decode(&personalidade)
+    database.DB.Save(&personalidade)
+    json.NewEncoder(w).Encode(personalidade)
+}COPIAR CÓDIGO
+[01:50] Vou parar o meu servidor, voltar, atualizar aqui go run main.go, estou dando ele mais uma vez, iniciou o nosso servidor. O que eu vou fazer vai ser o seguinte: eu vou vir aqui em "Schemas" no nosso Postman e vou dar mais uma requisição GET. Observa como vai mudar esse conteúdo aqui embaixo. Requisição GET e ele mudou. Olha só que bonito ficou o syntax highlight.
+
+[02:15] O que aconteceu aqui? Aconteceu que indicamos aqui o tipo de conteúdo que vamos disponibilizar nesse recurso é do tipo Json, application json. Ele deixou isso muito mais bonito. Porém, se eu quiser, por exemplo, colocar o "id": 1, olha só que interessante, ele não vai mostrar legal aqui o Content-type, ele mostra com o nome estranho, não mostrou com aquele formato bonito.
+
+[02:38] Temos duas opções: ou copiamos e colamos para todas as nossas funções isso daqui ou criamos um método de antes de executar essas funções colocamos em todas as funções que temos aqui com http, Response Writer e o Request, todas as funções falamos: "olha, adicional no cabeçalho o content-type indicando que é um Json".
+
+[03:01] E é isso que vamos aprender no próximo vídeo.
+
+@@03
+Middleware
+
+[0:00] No nosso controller, na linha 18, no nosso ResponseWriter, setamos no cabeçalho um "Content-Type" indicando que retornaremos um "application/json". Isso ficou bem legal. As nossas outras requisições não estão assim. Repare que elas devolvem um texto mesmo, por mais que tenham a estrutura de um json.
+[0:25] Então, poderíamos copiar essa linha 18 para todas as nossas outras funções, mas isso é ruim. Quando estamos construindo uma aplicação, queremos compartilhar uma funcionalidade ou algo para que outras funções a executem. É esse o cenário em que estamos. Poderíamos dar um "CTRL + C" e "CTRL + V" no nosso código para copiar a função para todos, mas essa não é a maneira mais funcional de fazer isso. Queremos uma forma mais organizada de configurar e compartilhar essa execução.
+
+[0:58] A execução funciona assim: temos um roteador do mux, que registra diversos caminhos (URLs) para comparar com as solicitações que queremos realizar. Então, quando chegar uma solicitação para "/api/personalidades", passaremos para alguém que consegue lidar com essa solicitação. Então, temos os nosso manipuladores, que são os controllers, e temos o mux fazendo o roteamento dessas solicitações HTTP que temos aqui.
+
+[1:32] O que queremos fazer agora é, antes de passar para o nosso controller, colocar alguém que insira, para todas as nossas funções, o cabeçalho da linha 18. Queremos setar esse cabeçalho indicando que o "Content-type" que será devolvido para o nosso ResponseWriter é "application/json".
+
+[1:54] Como fazemos isso? Uma maneira de organizar uma determinada funcionalidade e compartilhá-la com outras partes do nosso código é através dos Middlewares. O middleware vai receber a solicitação do roteador e, antes de passar para o nosso controller, ele vai inserir algum fluxo ou funcionalidade.
+
+[2:28] Em palavras bem simples, usar um middleware é muito útil para conseguirmos evitar duplicidade de código, para não precisarmos ficar copiando e colando a mesma linha para todas as funções que queremos. Então, o que vai acontecer? Criaremos alguém que entra nesse momento da nossa aplicação. Recebemos o endpoint, haverá um middleware no meio, que vai setar o application/json para todos e depois passará para os controllers.
+
+[3:01] Para começar, criarei uma pasta chamada middleware e um arquivo chamado "middlewares.go". Informarei que se trata do pacote middleware e, como primeira coisa, criaremos uma função que vai setar o content type do nosso cabeçalho para todas as funções que temos no ResponseWriter.
+
+[3:40] Criarei uma função e vou chamá-la de ContentTypeMiddleware(). Ela receberá como parâmetro o handler que estamos utilizando. Quando eu digo handler, estou me referindo aos nossos controllers. Então, temos a nossa URL e depois os nossos handlers, que atendem às nossas requisições.
+
+[4:09] Para isso, vou criar uma propriedade chamada next e vou passar o http.Handler, porque quero colocar isso para todas as nossas requisições e vou retornar o nosso próprio handler já com esse setup do content type. Então, o meu retorno será um http.Handler. Assim, começamos a nossa função.
+
+[4:37] O que a nossa função terá? Quero retornar o nosso handler mesmo, então vou chamar o http.HandlerFunc(). Muito importante: usaremos o Handler Function, não apenas o Handler, ou seja, quem faz as funções para as nossas manipulações. Dentro dessa função, criarei uma função anônima em que teremos o ResponseWritere o http.Request. Depois que fecharmos o parênteses dessa função que fizemos, vou abrir e fechar as chaves e dar um "Enter". O código final ficou assim:
+
+package middleware
+
+import "net/http"
+
+    func ContentTypeMiddleware(next http.Handler) http.Handler {
+        return http.HandlerFunc(func(w ResponseWriter, r *http.Request))
+
+    }
+COPIAR CÓDIGO
+[5:28] O que faremos agora? Exatamente o que fizemos lá no nosso código do controller. Vou copiar a linha 18, porque quero que ele devolva para todos. O que ele vai fazer? Vai pegar todos os Handler e inserir a linha do Content-type. Lembrando que não trabalhamos só com um handler, temos diversos handlers que vamos utilizar. Eu quero colocar isso para todos, então vou pegar o próximo e colocar next.ServeHTTP(w, r), retornando o nosso ResponseWriter e o nosso http.Request.
+
+[6:00] Vou salvar e agora precisamos usar o middleware. Como fazemos isso? Vamos lá nas nossas rotas e agora, vou dizer: "Olha, depois que temos a instância do nosso mux, do nosso roteador, eu quero que utilizemos o middleware". Então, vou colocar em routes.go, na linha 13, r.Use(middleware.ContentTypeMiddleware), porque eu quero utilizar, e indico quem quero utilizar, que é a nossa função ContentTypeMiddleware.
+
+[6:41] O que vai acontecer agora? Repare que, no nosso código, para o endpoint de personalidades, no content type está indicado que utilizamos um json. Quando colocamos o ID 1, ele não está indicando. Vou fechar o nosso servidor, subi-lo mais uma vez.
+
+[7:06] E assim que eu subo, ele já fica com um formato legal. Vou realizar a requisição de todas as personalidades que já tínhamos e vou remover no meu controller, a linha 18, porque não precisamos mais dela. Por quê? A partir de agora, todas as nossas requisições indicarão que a resposta que usamos no cabeçalho é um "application/json".
+
+@@04
+Preparando o ambiente
+
+No próximo vídeo, vamos integrar uma aplicação front-end desenvolvida em React para consumir nossa API. Para isso, clique neste link para realizar o download do projeto React e siga os passos abaixo:
+Após o download, verifique se Nodejs está instalado em sua máquina, executando o seguinte comando em terminal:
+node --versionCOPIAR CÓDIGO
+Se sua versão aparecer na tela, pode passar para o próximo passo. Caso a versão do Nodejs não apareça na tela, realize por gentileza o download do Nodejs em sua máquina, de acordo com seu sistema operacional.
+
+Agora abra um terminal na pasta do projeto e digite o seguinte comando para instalar as dependências do React:
+npm installCOPIAR CÓDIGO
+Atualize as dependências do npm com o seguinte comando:
+npm updateCOPIAR CÓDIGO
+Para finalizar, ainda no terminal digite o comando abaixo para subir o servidor do React e aguarde:
+npm startCOPIAR CÓDIGO
+Após o carregamento, será exibida a seguinte página:
+
+print-react.png
+
+Chegou aqui? Você está pronto para descobrir o que é CORS na. Algo deu errado? Não hesite em pedir ajuda no fórum!
+
+https://github.com/guilhermeonrails/frontend-react-personalidades/archive/refs/heads/master.zip
+
+https://nodejs.org/en/
+
+https://nodejs.org/en/download/
+
+@@05
+Integração com front-end
+
+[00:00] Durante o nosso treinamento, vimos muitas coisas legais do GO e como criar uma API Rest. O nosso CRUD está completo, criamos middleware, controller, conexão com banco de dados que estar rodando no Docker, um monte de coisa bacana. Só que como que integramos essa API que fizemos com o Go com o front-end React, por exemplo?
+[00:20] Lembrando que esse curso, o foco principal é a linguagem GO, então não vamos entrar em detalhes da linguagem JavaScript com framework React, por exemplo, mas fizemos algo muito especial. No link anterior, preparando ambiente, tem um projeto, tem o React já feito, já criado para consumirmos essa API que fizemos em GO. Vamos entender o que precisamos fazer para integrar o GO, essa API que fizemos usando a linguagem GO, usando o Mux, com o JavaScript, com o React lá na frente.
+
+[00:57] Outro time desenvolveu o front-end. Estou descompactando a pasta, lembrando que o link está na atividade anterior, e temos esse projeto aqui, "front-end react". O que eu vou fazer? Eu vou abrir no VS Code uma nova janela e vou arrastar esse projeto do React aqui para dentro para darmos uma olhada.
+
+[01:17] Ele está carregando, esperar abrir e aqui temos o projeto do React. Lembrando, se você nunca mexeu em um projeto com React não se preocupe, não vamos entrar em detalhes de como o React funciona, o que precisamos fazer. Aqui já temos uma aplicação já consumindo a nossa API.
+
+[01:33] Vamos só dar uma olhada no que ela faz. Aqui na pasta “src”, temos uma série de coisas, série de arquivos, tanto JS como CSS, e temos aqui um componente de personalidade, que é o foco da nossa aplicação. Se acessamos aqui "Personalidade.js", vamos dar uma olhada nesse código, o que ele faz. Lembrando, não vamos entrar em detalhes.
+
+[01:56] Ele faz um requisição GET para “localhost:8000”, que é a porta que estamos utilizando para rodar nossa aplicação, localhost:8000/api/personalidades, e ele lista todas as personalidades e carrega as personalidades na tela. Se você quiser saber mais sobre React depois desse curso, eu recomendo que você assista outros treinamentos aqui da Alura desse framework bem legal.
+
+[02:18] Estamos fazendo uma requisição .get(). A API já está feita, o nosso CRUD está certo, e essa aplicação no React faz uma requisição .get(), esse só quer lista na tela todas as personalidades que temos na nossa base de dados. Vamos entender o que precisamos fazer, executar para subir e colocar esse front-end no ar.
+
+[02:41] A primeira coisa que você vai precisar é ter o Node instalado na sua máquina. Se colocamos aqui no terminal node –version, por exemplo, ele vai falar a versão do Node que eu estou utilizando. Se a sua versão estiver um pouco diferente não tem problema, não precisa se preocupar. Você só precisa do Node instalado.
+
+[02:57] Depois, vamos precisamos instalar dentro da pasta do projeto que estamos. Repara que eu já estou dentro da pasta do projeto, onde tem todos os arquivos que eu tenho. O que eu vou precisar fazer? Vou precisar instalar essas dependências que esse projeto Node precisa. Vou limpar aqui o terminal. Vou colocar npm install, dou o "Enter". Olha que interessante, ele vai instalar tudo que é necessário para que consigamos subir esse projeto do React. Todas as dependências vão ser instaladas. Assim que terminar aqui as dependências, nós voltamos.
+
+[03:34] Maravilha. Ele terminou de instalar. O que eu vou fazer agora vai ser atualizar todos os pacotes, as dependências desse projeto, com o seguinte comando: npm update, vou dar um "Enter" aqui. Tudo está instalado certo. Para conseguirmos subir o servidor do react npm start, dou um "Enter" e ele vai subir esse projeto aqui.
+
+[04:04] Quando ele sobe, já abre uma janela para conseguirmos visualizar. Vou arrastar essa janela aqui esse monitor para conseguirmos ver. Ele está carregando aqui essa janela. Só um detalhe: lembrando que a nossa aplicação de personalidade já está rodando. Se eu fizer uma requisição do React aqui, repara que já temos a resposta certa. Vou colocar um "id": 2 aqui, por exemplo, a API continua funcionando, está rodando.
+
+[04:29] Carregou aqui o nosso projeto React no navegador, tem o símbolo do GO girando, o símbolo do React girando. Todo mundo girando, só que o que não estar sendo legal é que não estamos listando as requisições GETs. Vamos entender o porquê.
+
+[04:44] Se eu clicar com o botão direito do mouse e vir aqui em "Inspecionar > Console", olha só, ele fala que nós tentamos fazer um acesso aqui com o “localhost:8000”, só que é uma origem diferente, estou aqui no “localhost:3000”, que é a porta onde o React sobe por padrão. E ele fala que ele foi bloqueado por causa do policy CORS, da política de CORS, que não podemos acessar o compartilhamento cruzado, tal, e precisamos colocar isso no nosso Header.
+
+[05:17] Olha só, que interessante. Temos um problema que acontece no frontend que quem resolve é o pessoal do backend. Temos a nossa aplicação, ela está fazendo uma requisição GET, só que por alguma política de segurança não estamos conseguindo acessar essa nossa API. No próximo vídeo, vamos aprender o que precisamos fazer do lado do GO, do lado da API para que essa aplicação em React consiga consumir a nossa API feita em GO.
+
+@@06
+O CORS
+
+[00:00] Vamos alterar a nossa API React para conseguir conectar com o front-end React? A primeira coisa que vamos fazer é entender um pouco sobre esse erro. Olha só, ele fala que não conseguimos acessar por causa da política do Cors. Vamos pesquisar um pouco sobre isso. Vou digitar "cors policy" no Google, vou dar um "Enter" aqui para vermos. Eu vou acessar o link do Mozilla para termos uma base legal.
+[00:27] Esse primeiro link mesmo aqui. Vou clicar nele. E ele fala que o compartilhamento de recursos tem origens diferentes. O que isso significa? Significa que eu tenho um determinado domínio, protocolo ou porta, um caminho. No caso aqui, o nosso front-end React está rolando em um domínio “localhost:3000”, então é um domínio. E a nossa API, a nossa aplicação mesmo GO, está rolando no localhost, só que em outra porta.
+
+[00:59] Isso ele já considera que é um compartilhamento que não pode deixar acontecer, a não ser que falemos para ele que queremos permitir essa comunicação entre eles. Ela fala assim: que quando temos um domínio, protocolo ou porta diferente não podemos acessar. Para termos uma ideia melhor visual do que isso significa, eu vou digitar aqui o que é política de mesma origem, "same origin policy".
+
+[01:27] Vou clicar nesse link mesmo do Mozilla para entendermos com uma forma visual. Ele fala que isso acontece por questões de segurança, não podemos permitir que outra aplicação faça uma requisição e receba todas as informações de outra porta, outro domínio e pegue todas as informações sem que isso já esteja combinado.
+
+[01:48] Aqui temos um exemplo que é muito legal, vou até dar um zoom aqui para podermos ver. O que ele fala? O que ele considera sendo a mesma origem? Mesmo que temos paths diferentes é a mesma origem. Temos aqui um exemplo: "http://store.company.com/dir2/other.html". E temos aqui na outra pasta, uma outra origem, que só tem o "dir", não tem o "dir2".
+
+URL	Outcome	Reason
+http://store.company.com/dir2/other.html	Same origin	Only the path differs
+http://store.company.com/dir/inner/another.html	Same origin	Only the path differs
+https://store.company.com/page.html	Failure	Different protocol
+http://store.company.com:81/dir/page.html	Failure	Different port (http:// is port 80 by default)
+http://news.company.com/dir/page.html	Failure	Different host
+[02:15] Isso ele ainda considera sendo de mesma origem. Porém, se temos aqui nesse penúltimo exemplo aqui, portas diferentes, então uma porta é "store.company.com:81", é uma porta diferente, não podemos permitir, ou se temos um protocolo diferente, aqui temos "https" e aqui temos "http". Protocolos diferentes não podemos deixar também. E a mesma coisa ele fala para diferentes hosts.
+
+[02:45] Temos "News.company.com/dir", esse "news.company" já é outro lugar, já é outro host, então ele não permite. Para conseguirmos conversar, conectar, integrar o front-end, seja em React ou qualquer outro framework de front-end, para o desenvolvimento front-end, vamos precisar falar no back-end: "olha, essa porta, este caminho, este endereço, ou todos os endereços estão permitidos". Vamos isso agora com o GO.
+
+[03:18] Vou lá na nossa aplicação GO, na aplicação na React, na nossa aplicação GO, vou aqui no "routes.go" e vamos fazer essa alteração agora. Para permitirmos essa comunicação, vamos usar uma nova biblioteca que vai nos auxiliar nessa configuração do handler. Vou pesquisar essa biblioteca aqui, a do GOrilla Mux mesmo, gorilla mux handlers.
+
+[03:47] Vou clicar nesse primeiro link aqui. Scrolamos um pouco aqui, tem como utilizamos esse handlers aqui. Estar vendo que esse primeiro caminho aqui, esse github.com/gorila/handlers, eu vou copia-lo, sem aspas, e vou fazer o quê? Vou trazer esse módulo, essa biblioteca para a nossa aplicação com o go get no terminal. go get github.com/gorilla/handlers, trazendo aquele caminho. Dou um "Enter" aqui e ele vai fazer esse módulo para nós.
+
+[04:23] O que eu vou fazer agora vai ser pegar a configuração que vai permitir as origens diferentes. Vamos pegar lá do nosso handlers mesmo, handlers.AllowedOrigins. Agora vou colocar o caminho que queremos permitir essas origens diferentes. Vou colocar um array aqui de string, que eu vou passar essas strings que vamos utilizar. Vou abrir e fechar chaves e vou colocar entre aspas um asterisco, []strings{“*”}.
+
+[04:59] Isso significa que eu vou permitir que qualquer aplicação consiga acessar e consumir os dados da minha API. Ah não, eu quero que só o “localhost:3000” funciona, eu posso colocar aqui localhost:3000. Mas eu vou deixar dessa forma. Para finalizar, vamos passar o nosso roteador.
+
+[05:15] Já temos a configuração do Cors e vou fazer o seguinte: tem as chaves, dois parênteses, eu vou abrir e fechar mais um chave e passar aqui o nosso roteador, ))(r)). Vou salvar esse cara. Depois que coloco, repara que fico uma marcação vermelha, que falta eu fechar o parêntese da nossa função principal. Repara que não temos nenhum erro, ele já trouxe um corte do handlers, que é no plural que precisamos para fazer essa configuração no Cors.
+
+package routes
+
+import (
+    "log"
+    "net/http"
+
+    "github.com/gorilla/handlers"
+    "github.com/gorilla/mux"
+    "github.com/guilhermeonrails/go-rest-api/controllers"
+    "github.com/guilhermeonrails/go-rest-api/middleware"
+)
+
+func HandleResquest() {
+    r := mux.NewRouter()
+    r.Use(middleware.ContentTypeMiddleware)
+    r.HandleFunc("/", controllers.Home)
+    r.HandleFunc("/api/personalidades", controllers.TodasPersonalidades).Methods("Get")
+    r.HandleFunc("/api/personalidades/{id}", controllers.RetornaUmaPersonalidade).Methods("Get")
+    r.HandleFunc("/api/personalidades", controllers.CriaUmaNovaPersonalidade).Methods("Post")
+    r.HandleFunc("/api/personalidades/{id}", controllers.DeletaUmaPersonalidade).Methods("Delete")
+    r.HandleFunc("/api/personalidades/{id}", controllers.EditaPersonalidade).Methods("Put")
+    log.Fatal(http.ListenAndServe(":8000", handlers.CORS(handlers.AllowedOrigins([]string{"*"}))(r)))
+}COPIAR CÓDIGO
+[05:43] Vou limpar aqui no meu terminar. Subindo mais uma vez o servidor do GO, iniciando servidor Rest com GO e vou lá para nossa aplicação em React no navegador. Quando eu atualizar aqui, observa o que vai acontecer, temos as personalidades aparecendo.
+
+[06:00] Será que é mesmo? Vamos alterar. No lugar de colocar aqui "Novo Postman", vou alterar. Vou descobrir qual é esse ID aqui. Vou pedir para trazer todas as personalidades escrevendo "http://localhost:8000/api/personalidades". "Novo Postman" é o 4. Queremos editar a "/personalidade/4", então vai ser o método PUT. Vou alterar: "nome”: “Alterando a personalidade 4", e aqui vou colocar "historia”: “Esta é a história da personalidade 4".
+
+{
+    "nome":"Alterando a personalidade 4",
+    "historia":"Esta é a história da personalidade 4"
+}COPIAR CÓDIGO
+[06:38] Vou dar uma requisição "Send" aqui e ele alterou, "alterando a personalidade 4", quando voltamos na nossa aplicação no React e atualiza, repara o que temos, "Alterando a personalidade 4", "esta é a história da personalidade 4". Isso ficou bem legal.
+
+[06:54] Dessa forma, conseguimos alterar a nossa API GO para conversar, se comunicar com uma aplicação front-end com React.
+
+https://developer.mozilla.org/pt-BR/docs/Web/HTTP/CORS
+
+https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy
+
+http://store.company.com/dir2/other.html%22
+
+http://store.company.com/dir2/other.html
+
+http://store.company.com/dir/inner/another.html
+
+https://store.company.com/page.html
+
+http://store.company.com:81/dir/page.html
+
+http://news.company.com/dir/page.html
+
+https://github.com/gorilla/handlers
+
+http://localhost:8000/api/personalidades%22
+
+@@07
+Cabeçalho Content-Type
+
+Nessa aula, criamos um middleware chamado ContentTypeMiddleware que inclui nas respostas das requisições a seguinte informação no cabeçalho:
+w.Header().Set("Content-type", "application/json")COPIAR CÓDIGO
+Analisando o código acima, podemos afirmar que:
+
+O cabeçalho Content-Type é utilizado para definir o método de autenticação que deve ser utilizado para conseguir acesso ao recurso.
+ 
+Alternativa correta
+Evitar duplicidade de código criando um middleware, por exemplo, é uma boa prática de programação.
+ 
+Alternativa correta! Certo! O código duplicado (seja ele acidental ou proposital) pode levar a complicações na manutenção, além de dificultar a refatoração.
+Alternativa correta
+O cabeçalho Content-Type é utilizado para indicar o tipo de arquivo do recurso.
+ 
+Alternativa correta! Certo! Desta forma, indicamos ao cliente da requisição que o tipo de conteúdo da resposta é do tipo JSON.
+
+@@08
+Faça como eu fiz
+
+Nesta aula. Caso já tenha feito isso, excelente. Se ainda não fez, é importante que você implemente o que foi visto no vídeo para poder continuar com a próxima aula, que tem como pré-requisito todo o código escrito até o momento.
+Caso não encontre uma solução nas perguntas feitas por alunos e alunas deste curso, para comunicar erros e tirar dúvidas de forma eficaz, clique neste link e saiba como utilizar o fórum da Alura .
+
+https://cursos.alura.com.br/comunicando-erros-e-tirando-duvidas-em-foruns-c19
+
+Não tem dúvidas? Que tal ajudar alguém no fórum?
+: )
+
+@@09
+Projeto final do curso
+
+Aqui você pode baixar o zip da aula 05 ou acessar os arquivos no Github!
+
+https://github.com/alura-cursos/api-go-rest/tree/aula_5
+
+@@10
+O que aprendemos?
+
+Nesta aula:
+Indicamos o tipo do arquivo nas respostas da requisições incluindo o cabeçalho Content-Type;
+Criamos um middleware para evitar código duplicado no controller;
+Entendemos a importância da política de mesma origem e como compartilhar recursos de origens diferentes configurando o CORS;
+Configuramos o CORS e integramos a API Go com uma aplicação React.
+
+https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Headers/Content-Type
+
+https://github.com/alura-cursos/api-go-rest/blob/aula_5/middleware/middleware.go
+
+https://developer.mozilla.org/pt-BR/docs/Web/HTTP/CORS
+
+@@11
+Conclusão
+
+[00:00] Se você chegou até aqui, parabéns! Você está concluindo mais um treinamento da Alura. Nesse curso, vimos várias coisas legais. Vimos como criar uma API Rest usando uma linguagem GO e algumas bibliotecas ali para nos auxiliar com o roteamento, a conversa com o RM. Isso ficou simplesmente incrível.
+[00:17] Fizemos o CRUD completo da nossa aplicação. A nossa API consegue atualizar, criar, editar, recuperar recursos. Isso ficou incrível. Além disso, conseguimos conectar a nossa aplicação com o banco de dados Docker. Se você não tem experiência com Docker já te aconselho a estudar Docker, que é uma ferramenta incrível, super usada nesse nosso ambiente back-end.
+
+[00:43] Para finalizar, vimos que conseguimos conectar essa nossa API com um front-end React. Passamos ali por políticas de mesma origem, criamos um middleware para retornar um content-type, informar qual o content-type no cabeçalho, na requisição. Isso ficou simplesmente muito legal.
+
+[01:01] Eu espero que você tenha gostado muito desse treinamento. Foi uma honra ter você até este momento. Não se esqueça de dar a nota do curso, falar o que você mais gostou para que criemos uma plataforma ainda mais incrível e você aprenda e se desenvolva ainda mais. Bons estudos, não pare por aqui, refaça essa aplicação, continue estudando e nos encontramos no próximo treinamento.
