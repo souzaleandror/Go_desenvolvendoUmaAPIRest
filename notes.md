@@ -416,7 +416,6 @@ Vamos adicionar um ID nas personalidades e conectar nossa aplicação com um ban
 
 @@01
 Projeto da aula anterior
-PRÓXIMA ATIVIDADE
 
 Aqui você pode baixar o zip da aula 01 ou acessar os arquivos no Github!
 
@@ -468,7 +467,6 @@ func HandleResquest() {
 
 @@07
 Exibindo uma personalidade
-PRÓXIMA ATIVIDADE
 
 Uma pessoa não conseguiu exibir uma personalidade por ID e resolveu pedir a sua ajuda. Veja o código que a pessoa compartilhou:
 models.go
@@ -516,7 +514,6 @@ Alternativa correta! Isso! Observe que o parâmetro da rota /api/personalidades/
 
 @@08
 Faça como eu fiz
-PRÓXIMA ATIVIDADE
 
 Chegou a hora de você seguir todos os passos realizados por mim durante esta aula. Caso já tenha feito isso, excelente. Se ainda não fez, é importante que você implemente o que foi visto no vídeo para poder continuar com a próxima aula, que tem como pré-requisito todo o código escrito até o momento.
 Caso não encontre uma solução nas perguntas feitas por alunos e alunas deste curso, para comunicar erros e tirar dúvidas de forma eficaz, clique neste link e saiba como utilizar o fórum da Alura .
@@ -529,7 +526,6 @@ Não tem dúvidas? Que tal ajudar alguém no fórum?
 
 @@09
 O que aprendemos?
-PRÓXIMA ATIVIDADE
 
 Nesta aula:
 Adicionamos o Gorilla Mux como novo roteador da nossa aplicação;
@@ -550,7 +546,6 @@ https://github.com/alura-cursos/api-go-rest/blob/aula_2/migration/docker-databas
 
 @@01
 Projeto da aula anterior
-PRÓXIMA ATIVIDADE
 
 Aqui você pode baixar o zip da aula 02 ou acessar os arquivos no Github!
 
@@ -743,7 +738,6 @@ func RetornaUmaPersonalidade(w http.ResponseWriter, r *http.Request) {
 
 @@05
 Go mod
-PRÓXIMA ATIVIDADE
 
 Conectamos nossa aplicação com banco de dados Postgres e adicionamos alguns módulos nesta aula. Podemos ver todos os módulos e pacotes usados até aqui no arquivo go.mod:
 module github.com/guilhermeonrails/go-rest-api
@@ -771,7 +765,6 @@ https://github.com/alura-cursos/api-go-rest/blob/aula_2/routes/routes.go
 
 @@06
 Faça como eu fiz
-PRÓXIMA ATIVIDADE
 
 Chegou a hora de você seguir todos os passos realizados por mim durante esta aula. Caso já tenha feito isso, excelente. Se ainda não fez, é importante que você implemente o que foi visto no vídeo para poder continuar com a próxima aula, que tem como pré-requisito todo o código escrito até o momento.
 Caso não encontre uma solução nas perguntas feitas por alunos e alunas deste curso, para comunicar erros e tirar dúvidas de forma eficaz, clique neste link e saiba como utilizar o fórum da Alura .
@@ -783,7 +776,6 @@ Não tem dúvidas? Que tal ajudar alguém no fórum?
 
 @@07
 O que aprendemos?
-PRÓXIMA ATIVIDADE
 
 Nesta aula:
 Instalamos o Gorm;
@@ -791,3 +783,375 @@ Realizamos a conexão da API com banco de dados;
 Alteramos as funções do controller para exibir as informações do banco de dados.
 Na próxima aula:
 Vamos aprender como criar, editar e deletar uma personalidade!
+
+#### 03/10/2023
+
+@04-Criando, deletando e editando com Gorm
+
+@@01
+Projeto da aula anterior
+
+Aqui você pode baixar o zip da aula 03 ou acessar os arquivos no Github!
+
+https://github.com/alura-cursos/api-go-rest/archive/refs/heads/aula_3.zip
+
+https://github.com/alura-cursos/api-go-rest/tree/aula_3
+
+@@02
+Criando recursos
+
+[00:00] O que vamos fazer agora é aprender como o Gorm pode nos auxiliar a criar novas personalidades.
+[00:07] Podíamos criar uma personalidade aqui no banco de dados, mas não é essa a minha ideia. Eu não quero que as pessoas acessem o banco de dados para criar uma nova personalidade, eu quero que elas submetam uma requisição igual a essa que estamos fazendo, similar a essa com o "Get", uma requisição com uma ação diferente para criar essa personalidade.
+
+[00:28] A primeira coisa que vamos fazer é criar uma função aqui no nosso controller que cria uma personalidade. Vai ser a func CriaUmaNovaPersonalidade(w http.RespondeWriter, r *http.Request).
+
+[00:57] Eu vou criar uma variável do tipo personalidade, var personalidade models.Personalidade. Lembra que eu falei várias vezes durante o curso que estamos utilizando o json.Enconder? Todas as vezes fazemos json.NewEncoder para conseguirmos pegar uma informação json que já temos para ser exibida.
+
+[01:30] Nesse caso específico vai ser diferente, vamos usar o New Decoder, queremos decodificar, queremos pegar uma informação que está no formato JSON e conseguir salvar no banco de dados no formato que o GO e o ORM do GO entendam.
+
+[01:47] Coloquei aqui json.NewDecoder() e onde está toda a informação que a pessoa vai submeter? A pessoa vai submeter essa informação através de uma requisição que chamamos de Post, e nesse Post vai ter todas as informações semelhantes com o que vemos aqui.
+
+[02:02] Por exemplo: a pessoa vai submeter ela vai falar qual é o nome da pessoa que ela está querendo carregar a nova personalidade e a história que ela vai submeter também. Depois que ela termina isso e ela envia essa requisição eu quero salvar no banco de dados.
+
+[02:19] Uma das formas que temos de pegar todas essas informações que ela coloca como o nome e a história é através do Request, json.NewDecoder(r.Body). r.Body vamos pegar toda essa informação.
+
+[02:32] Aqui lembra que sempre usávamos NewEncoder.Encode? Aqui vai ser o oposto, NewDecoder.Decode, não vai ser Encode. json.NewDecoder(r.Body).Decode(). Vamos decodificar essa personalidade. Para ficar até mais fácil vou colocar nova personalidade, aí vai ficar até mais claro para enxergarmos. Eu vou apontar para o endereço de memória da nova personalidade. json.NewDecoder(r.Body).Decode(&novaPersonalidade), aí ele vai gerar essa nova personalidade para mim.
+
+[03:02] Nessas duas linhas que fizemos, 32 e 33, ele gerou para nós essa nova personalidade só que não criou no banco de dados. Ele tem essas informações, mas não foi criada no banco de dados. Para salvar no banco de dados: database.DB.Create, muito simples, é bem fácil a interpretação. E ele vai criar pegando o endereço de memória da nova personalidade. database.DB.Create(&novaPersonalidade).
+
+[03:35] Para finalizar, depois que salvamos no banco de dados seria legal visualizarmos essa pessoa que foi criada. Para isso vamos usar o json.NewEncoder nesse caso, que vai encodar essa pessoa devolvendo o ResponseWriter e aqui vamos passar o Encode da nova personalidade. json.NewEncoder(w).Encode(novaPersonalidade).
+
+[04:01] Olha que interessante, se temos um dado que é JSON e queremos exibi-lo fazemos o NewEncoder, se temos um dado que recebemos JSON e precisamos converter esse dado para que tanto o ORM do GO como o GO entenda, queremos decodificar. NewDecoder estamos recebendo JSON e estamos decodificando para que o ORM do JSON saiba trabalhar e o Encoder estamos pegando a informação, criando um ResponseWriter aqui, criando uma informação para exibir encodando essa nova personalidade que estamos mostrando.
+
+package controllers
+
+import (
+    "encoding/json"
+    "fmt"
+    "net/http"
+
+    "github.com/gorilla/mux"
+    "github.com/guilhermeonrails/go-rest-api/database"
+    "github.com/guilhermeonrails/go-rest-api/models"
+)
+
+func Home(w http.ResponseWriter, r *http.Request) {
+    fmt.Fprint(w, "Home Page")
+}
+
+func TodasPersonalidades(w http.ResponseWriter, r *http.Request) {
+    var p []models.Personalidade
+    database.DB.Find(&p)
+    json.NewEncoder(w).Encode(p)
+}
+
+func RetornaUmaPersonalidade(w http.ResponseWriter, r *http.Request) {
+    vars := mux.Vars(r)
+    id := vars["id"]
+    var personalidade models.Personalidade
+    database.DB.First(&personalidade, id)
+    json.NewEncoder(w).Encode(personalidade)
+}
+
+func CriaUmaNovaPersonalidade(w http.ResponseWriter, r *http.Request) {
+    var novaPersonalidade models.Personalidade
+    json.NewDecoder(r.Body).Decode(&novaPersonalidade)
+    database.DB.Create(&novaPersonalidade)
+    json.NewEncoder(w).Encode(novaPersonalidade)
+}COPIAR CÓDIGO
+[04:39] Vou salvar isso aqui e eu vou lá no meu arquivo de “routes.go” e aqui tem algo muito interessante. Observe que temos aqui dois métodos, lembra que quando eu usei o Methods("Get") sempre para buscar uma informação, você vai lá e pega no banco de dados, vai lá e faz alguma coisa. Nesse nosso caso vamos usar o contrário, queremos postar uma informação, criar uma informação.
+
+[05:02] Para isso eu vou dar aqui um "Ctrl + C" "Ctrl + V" de API, não vamos passar o Id, só vamos passar o API personalidades só que em um método diferente. O método de criação é o método "Post" e quem vai ser responsável quando chegar uma solicitação, uma requisição para API barra personalidades no Methods("Post") vai ser esse método que acabamos de criar que é o cria uma nova personalidade. Só isso.
+
+package routes
+
+import (
+    "log"
+    "net/http"
+
+    "github.com/gorilla/handlers"
+    "github.com/gorilla/mux"
+    "github.com/guilhermeonrails/go-rest-api/controllers"
+    "github.com/guilhermeonrails/go-rest-api/middleware"
+)
+
+func HandleResquest() {
+    r := mux.NewRouter()
+    r.HandleFunc("/", controllers.Home)
+    r.HandleFunc("/api/personalidades", controllers.TodasPersonalidades).Methods("Get")
+    r.HandleFunc("/api/personalidades/{id}", controllers.RetornaUmaPersonalidade).Methods("Get")
+    r.HandleFunc("/api/personalidades", controllers.CriaUmaNovaPersonalidade).Methods("Post")
+    log.Fatal(http.ListenAndServe(":8000",r))
+}COPIAR CÓDIGO
+[05:36] No controle fizemos um NewDecoder pegando o conteúdo que vem no body da requisição e decodificando com uma nova personalidade. Depois pedimos para o banco de dados criar essa nova personalidade e depois exibir essa nova personalidade para nós.
+
+[05:53] Para testarmos isso eu vou parar o meu servidor, eu vou rodar com go run main.go no terminal, iniciou. Eu vou utilizar esse método chamado postman, com ele conseguimos realizar solicitações, requisições diferentes, com métodos diferentes de uma forma muito simples que vou mostrar para você como é que funciona.
+
+[06:18] A ideia é que a minha API eu quero disponibilizar para que outras pessoas criem personalidades também. Está carregando aqui o nosso postman, agora que o meu postman já abriu eu vou clicar em workspace e vou criar um novo workspace que vou chamar de Go Rest API, podemos colocar ali outras informações também, vou deixar só isso. Dou um "Enter" aqui e ele está criando esse workspace para nós para testarmos.
+
+[06:49] Vamos para o Go to workspace e temos aqui o nosso workspace já funcionando. Aqui temos o overview desse workspace. Nesse sinal de "Mais" aqui olha que interessante, quando eu coloco esse sinal de Mais aparece aqui o tipo de requisição que vamos fazer, vários tipos diferentes, e aqui vamos colocar o endereço de memória.
+
+[07:08] Será se isso vai funcionar? Vamos testar. Eu vou colocar aqui para exibir todas as personalidades, eu vou copiar “localhost:8000/api/personalidades”, quando eu clico em "Send" ele vai exibir aqui embaixo para nós o nome de todas as personalidades que temos cadastradas.
+
+[07:26] Se eu colocar “localhost:8000/api/personalidades/2”, por exemplo, vai vir só a Carmela Dutra. O que eu quero fazer agora é criar uma nova personalidade. Para criar uma nova personalidade com base no endpoint que temos que é api/personalidades igual ao nosso para exibir todas, só que com método diferente, o método é o "Post".
+
+[07:53] Lembra que usamos lá no body falamos que o que vier escrito no body é o que vamos usar para criar a nossa requisição. Coloquei aqui no método post e o que vou fazer agora é escolher essa opção raw porque eu quero escrever.
+
+[08:10] Vou colocar aqui que eu quero escrever um Json, o nosso arquivo tem um nome, { "nome":"Nome Postman", "historia":"historia Postman" }.
+
+{ 
+    "nome":"Nome Postman",
+    "historia":"historia Postman"
+}COPIAR CÓDIGO
+[08:38] Vou dar um “Send” aqui, vamos ver. Olha só que interessante, eu vou clicar e ele deu id 3, nome Postman, historia, historia Postman. Vamos lá no banco de dados em pgAdmin primeiro, vou clicar com o botão direito do mouse em "personalidades", "View/Edit Data > All Rows" para visualizar todas, ele está carregando. E temos o dado 3, Nome Postman e historiaPostman.
+
+[09:01] Se eu peço para exibir todas as personalidades aqui vamos ter agora três personalidades: o Id: 1 o Deodato, o Id: 2 a Carmela e o Id: 3 do Nome Postman que acabamos de criar. Deu certo.
+
+[09:18] Dessa forma, conseguimos criar novas personalidades através de requisições "Post". Só para recordarmos aqui, agora temos três tipos de requisição na nossa aplicação, temos um endpoint para exibir todas as personalidades, um endpoint no método "Get" para trazer apenas uma personalidade e um endpoint no método "Post" para criarmos uma nova personalidade no banco de dados e exibir essa personalidade também.
+
+@@03
+Deletando recursos
+
+[00:00] O que eu quero fazer agora é uma forma para conseguirmos deletar uma determinada personalidade. Conseguimos visualizar, criar e o que eu quero fazer agora é deletar uma personalidade.
+[00:12] Vamos lá no nosso controller e vou criar uma nova função que deleta uma personalidade. ResponseWriter, assim como todas as nossas outras funções. fun DeletaUmaPersonalidade(w http.RespondeWriter, r *http.Request)
+
+[00:32] A primeira coisa que precisamos fazer é buscar qual é o ID que estamos querendo deletar, assim como fazemos para retornar uma personalidade. Eu vou copiar essas duas linhas aqui, na verdade essas três linhas aqui eu vou copiar utilizando as teclas "Ctrl + C" e "Ctrl + V".
+
+[00:51] Eu quero pegar lá de vars o Id da personalidade que queremos deletar e criar uma nova variável chamada personalidade do tipo personalidade. var personalidade models.Personalidade. Para conseguimos deletar eu vou pedir para o nosso banco de dados, database.DB.Delete(&personalidade, id) e eu vou passar o endereço de memória da personalidade que queremos deletar e vou passar também o Id que queremos deletar a personalidade.
+
+[01:28] São duas informações que passamos o endereço de memória da personalidade, da estrutura que queremos deletar e o Id. No final exibimos qual foi a personalidade que deletamos. json.NewEncoder(w).Encode(personalidade).
+
+package controllers
+
+import (
+    "encoding/json"
+    "fmt"
+    "net/http"
+
+    "github.com/gorilla/mux"
+    "github.com/guilhermeonrails/go-rest-api/database"
+    "github.com/guilhermeonrails/go-rest-api/models"
+)
+
+func Home(w http.ResponseWriter, r *http.Request) {
+    fmt.Fprint(w, "Home Page")
+}
+
+func TodasPersonalidades(w http.ResponseWriter, r *http.Request) {
+    var p []models.Personalidade
+    database.DB.Find(&p)
+    json.NewEncoder(w).Encode(p)
+}
+
+func RetornaUmaPersonalidade(w http.ResponseWriter, r *http.Request) {
+    vars := mux.Vars(r)
+    id := vars["id"]
+    var personalidade models.Personalidade
+    database.DB.First(&personalidade, id)
+    json.NewEncoder(w).Encode(personalidade)
+}
+
+func CriaUmaNovaPersonalidade(w http.ResponseWriter, r *http.Request) {
+    var novaPersonalidade models.Personalidade
+    json.NewDecoder(r.Body).Decode(&novaPersonalidade)
+    database.DB.Create(&novaPersonalidade)
+    json.NewEncoder(w).Encode(novaPersonalidade)
+}
+
+func DeletaUmaPersonalidade(w http.ResponseWriter, r *http.Request) {
+    vars := mux.Vars(r)
+    id := vars["id"]
+    var personalidade models.Personalidade
+    database.DB.Delete(&personalidade, id)
+    json.NewEncoder(w).Encode(personalidade)
+}COPIAR CÓDIGO
+[01:52] Salvei, vou lá em "routes.go" e utilizo as teclas "Ctrl + C" "Ctrl + V" aqui de personalidades, só que personalidades para deletarmos temos também um barra id. ("/api/personalidades/{id}".
+
+[02:04] Para deletar vamos chamar lá do nosso controle a função que deleta uma personalidade e o método que vamos utilizar é o método "Delete". HandleFunc("/api/personalidades/{id}", controllers.DeleteUmaPersonalidade).Methods("Delete").
+
+package routes
+
+import (
+    "log"
+    "net/http"
+
+    "github.com/gorilla/handlers"
+    "github.com/gorilla/mux"
+    "github.com/guilhermeonrails/go-rest-api/controllers"
+    "github.com/guilhermeonrails/go-rest-api/middleware"
+)
+
+func HandleResquest() {
+    r := mux.NewRouter()
+    r.HandleFunc("/", controllers.Home)
+    r.HandleFunc("/api/personalidades", controllers.TodasPersonalidades).Methods("Get")
+    r.HandleFunc("/api/personalidades/{id}", controllers.RetornaUmaPersonalidade).Methods("Get")
+    r.HandleFunc("/api/personalidades", controllers.CriaUmaNovaPersonalidade).Methods("Post")
+    r.HandleFunc("/api/personalidades/{id}", controllers.DeletaUmaPersonalidade).Methods("Delete")
+    log.Fatal(http.ListenAndServe(":8000", r))
+} COPIAR CÓDIGO
+[02:20] Então criamos uma função e usamos lá do nosso ORM o Delete() passando o endereço da pessoa, o endereço da personalidade e id dela. Vamos abrir no nosso terminal rodando go run main.go. Temos aqui todas as personalidades no Postman, vou fazer uma requisição get só para ver se está tudo certo. Ele nos trouxe todas as personalidades, isso ficou bem legal. O que eu quero fazer agora é deletar a personalidade três.
+
+[02:50] Quando eu faço a requisição GET está lá Id: 3, "nome": "Nome Postman", "historia": "historia Postman". Não, isso aqui não tem nada a ver, vou deletar. Vou clicar aqui em "delete", dou um “Send” e parece que deletou, ele deixou aqui com "Id":0, nome em branco "", historia em branco com "" também.
+
+[03:07] Vamos ver se deletou lá no nosso banco de dados. No banco de dados tínhamos esses três em "Data Output" na pgAdmin, atualizando em "View/Edit Data > All Rows" vamos ver, atualizou, e só temos os dois. Se viermos aqui na nossas personalidades no navegador para exibir todas, repare que esse "Id":3 aqui vai sumir. Atualizei e o "Id":3 sumiu.
+
+[03:26] Se formos pedir para deletar mais uma vez observe que nada acontece. Vou fazer uma requisição GET para exibir todos, para ter certeza e só temos duas personalidades no nosso banco de dados. Conseguimos criar uma forma para deletar essas personalidades.
+
+[03:45] O que falta agora é conseguirmos editar uma personalidade. Criamos uma personalidade, conseguimos visualizar, conseguimos visualizar, conseguimos deletar. Se escrevemos, por exemplo, o nome ou a história errada? Vamos aprender no próximo vídeo como fazemos para editar uma personalidade.
+
+@@04
+Editando recursos
+
+[00:00] Já sabemos como criar uma personalidade, como exibir uma personalidade por Id e isso ficou bem legal.
+[00:06] O que eu quero fazer agora é editar uma personalidade. Vamos supor que eu errei o nome, errei a história, alguma coisa assim e eu quero editar. A primeira coisa que vamos fazer é lá no nosso “controllers.go”, vou criar uma função que vou chamar de func EditaPersonalidade(w http.ResponseWriter, r *http.Request).
+
+[00:31] A primeira coisa para editarmos uma personalidade temos que saber qual personalidade estou querendo editar, qual é o id dessa personalidade. Essas três linhas aqui da nossa função de deletar são exatamente iguais. Vamos pedir qual é a variável, vamos buscar de todas as variáveis e pegar só o id e eu tenho aqui uma variável do tipo personalidade. var personalidade models.Personalidade.
+
+[00:56] O que eu vou fazer agora é pedir para que o banco de dados encontre essa personalidade que estou querendo editar. Já sabemos como pedimos para o banco de dados encontrar uma determinada personalidade. database.DB.First(). E queremos encontrar qual personalidade está passando o endereço de memória & de personalidade e o id. database.DB.First(&personalidade, id).
+
+[01:26] Dessa forma encontramos, é essa pessoa que queremos editar e colocamos nesse endereço de memória de personalidade. O que eu quero fazer agora é pedir para que o banco de dados faça o caminho oposto. Repare que vamos receber uma pessoa que temos por Id e estamos submetendo uma nova requisição para conseguir editar.
+
+[01:53] Já preparamos aqui o lado do nosso banco de dados só que não preparamos o corpo da requisição que vai editar. Só para termos uma ideia, para conseguirmos editar vamos utilizar o método PUT. O método PUT vamos, por exemplo, editar, eu vou colocar aqui "Nome Postman 2.0", por exemplo, para arrumar.
+
+{ 
+    "nome":"Nome Postman 2.0",
+    "historia":"historia Postman"
+}COPIAR CÓDIGO
+[02:15] Precisamos pegar esse corpo da requisição e já vimos como fazemos isso, vamos utilizar o json.NewDecoder(), queremos decodar o corpo da requisição r.Body.Decod()e passando o endereço de memória & e endereço de personalidade. json.NewDecoder(r.Body).Decode(&personalide).
+
+[02:40] Para finalizar vamos pedir para o banco de dados database.DB.Save para ele salvar o endereço de personalidade. database.DB.Save(&personalidade), e ele vai salvar esse endereço. Para finalizar vamos exibir essa nova pessoa que foi criada. json.NewEncoder(w).Encode(personalidade).
+
+package controllers
+
+import (
+    "encoding/json"
+    "fmt"
+    "net/http"
+
+    "github.com/gorilla/mux"
+    "github.com/guilhermeonrails/go-rest-api/database"
+    "github.com/guilhermeonrails/go-rest-api/models"
+)
+
+func Home(w http.ResponseWriter, r *http.Request) {
+    fmt.Fprint(w, "Home Page")
+}
+
+func TodasPersonalidades(w http.ResponseWriter, r *http.Request) {
+    var p []models.Personalidade
+    database.DB.Find(&p)
+    json.NewEncoder(w).Encode(p)
+}
+
+func RetornaUmaPersonalidade(w http.ResponseWriter, r *http.Request) {
+    vars := mux.Vars(r)
+    id := vars["id"]
+    var personalidade models.Personalidade
+    database.DB.First(&personalidade, id)
+    json.NewEncoder(w).Encode(personalidade)
+}
+
+func CriaUmaNovaPersonalidade(w http.ResponseWriter, r *http.Request) {
+    var novaPersonalidade models.Personalidade
+    json.NewDecoder(r.Body).Decode(&novaPersonalidade)
+    database.DB.Create(&novaPersonalidade)
+    json.NewEncoder(w).Encode(novaPersonalidade)
+}
+
+func DeletaUmaPersonalidade(w http.ResponseWriter, r *http.Request) {
+    vars := mux.Vars(r)
+    id := vars["id"]
+    var personalidade models.Personalidade
+    database.DB.Delete(&personalidade, id)
+    json.NewEncoder(w).Encode(personalidade)
+}
+
+func EditaPersonalidade(w http.ResponseWriter, r *http.Request) {
+    vars := mux.Vars(r)
+    id := vars["id"]
+    var personalidade models.Personalidade
+    database.DB.First(&personalidade, id)
+    json.NewDecoder(r.Body).Decode(&personalidade)
+    database.DB.Save(&personalidade)
+    json.NewEncoder(w).Encode(personalidade)
+}COPIAR CÓDIGO
+[03:15] Salvei. Repare que lá no nosso "routes.go" vamos ter algo muito parecido com o que deleta, "Ctrl + C" e "Ctrl + V", só que ao invés de deletar queremos editar, edita personalidade. E o método que vamos utilizar para isso é o método "Put".
+
+package routes
+
+import (
+    "log"
+    "net/http"
+
+    "github.com/gorilla/handlers"
+    "github.com/gorilla/mux"
+    "github.com/guilhermeonrails/go-rest-api/controllers"
+    "github.com/guilhermeonrails/go-rest-api/middleware"
+)
+
+func HandleResquest() {
+    r := mux.NewRouter()
+    r.HandleFunc("/", controllers.Home)
+    r.HandleFunc("/api/personalidades", controllers.TodasPersonalidades).Methods("Get")
+    r.HandleFunc("/api/personalidades/{id}", controllers.RetornaUmaPersonalidade).Methods("Get")
+    r.HandleFunc("/api/personalidades", controllers.CriaUmaNovaPersonalidade).Methods("Post")
+    r.HandleFunc("/api/personalidades/{id}", controllers.DeletaUmaPersonalidade).Methods("Delete")
+    r.HandleFunc("/api/personalidades/{id}", controllers.EditaPersonalidade).Methods("Put")
+    log.Fatal(http.ListenAndServe(":8000", r))
+}COPIAR CÓDIGO
+[03:46] Salvei, "Ctrl + C" "Ctrl + V", parei o meu servidor, subi o meu servidor GO mais uma vez. Iniciando e vou criar uma personalidade primeiro e depois vou editá-la. Aqui vai ser Postman, não sei se no Brasil tem alguma rua que se chama Postman, depois posso até pesquisar isso. “Send" e criou "Id”: 4, "nome": "Postman", "historia":"Postman".
+
+[04:22] Só que aí erramos e vamos precisar editar. "Novo Postman" que chama a história "Novo Postman" também. Vamos visualizar na nossa tabela isso aqui. Ele criou essa personalidade 4, vamos visualizá-las. Vou dar aqui um método GET para “http://localhost:8000/api/personalidades” e temos aqui nome Postman, historia Postman. Podemos até visualizar aqui também, vou atualizar aqui nome Postman, historia Postman.
+
+[04:56] O que eu quero fazer agora é ir lá no "Id": 4, vou dar a requisição GET para pegar só esse e agora eu quero atualizar. Vou dar um método PUT com esse nome Novo Postman e historia novo Postman também. Dou requisição “Send” aqui e ele atualizou.
+
+[05:13] Repare que aqui ele também vai fazer isso. O "Id": 4 é o nome Postman e historia Postman quando eu atualizar vai ficar novo e novo em cada um deles. Conseguimos atualizar, o Id mantém-se o mesmo e está tudo certo.
+
+[05:27] Repare que agora finalizamos o nosso CRUD, conseguimos criar recurso, editar recurso, deletar recurso e visualizar o recurso, recuperar essas informações também.
+
+@@05
+Métodos HTTP
+
+O protocolo HTTP define um conjunto de métodos de requisição responsáveis por indicar a ação a ser executada para um dado recurso. Embora esses métodos possam ser descritos como substantivos, eles também são comumente referenciados como Verbos HTTP, como ilustra o código desenvolvido nesta aula:
+r.HandleFunc("/api/personalidades", controllers.TodasPersonalidades).Methods("Get")
+r.HandleFunc("/api/personalidades/{id}", controllers.RetornaUmaPersonalidade).Methods("Get")
+r.HandleFunc("/api/personalidades", controllers.CriaUmaNovaPersonalidade).Methods("Post")
+r.HandleFunc("/api/personalidades/{id}", controllers.DeletaUmaPersonalidade).Methods("Delete")
+r.HandleFunc("/api/personalidades/{id}", controllers.EditaPersonalidade).Methods("Put")COPIAR CÓDIGO
+Sabendo disso, analise as afirmações abaixo apenas as verdadeiras.
+
+Existem apenas 4 verbos HTTP : GET, POST, PUT e DELETE.
+ 
+Alternativa correta
+O método PUT substitui todas as atuais representações do recurso de destino pela carga de dados da requisição.
+ 
+Alternativa correta! Usamos o PUT para atualizar um recurso.
+Alternativa correta
+O método POST solicita a representação de um recurso específico.
+ 
+Alternativa correta
+O método GET solicita a representação de um recurso específico.
+ 
+Alternativa correta! Certo! Tanto o endpoint para exibir todas as personalidades como apenas uma personalidade, são indicados pelo método GET.
+
+@@06
+Faça como eu fiz
+
+Chegou a hora de você seguir todos os passos realizados por mim durante esta aula. Caso já tenha feito isso, excelente. Se ainda não fez, é importante que você implemente o que foi visto no vídeo para poder continuar com a próxima aula, que tem como pré-requisito todo o código escrito até o momento.
+Caso não encontre uma solução nas perguntas feitas por alunos e alunas deste curso, para comunicar erros e tirar dúvidas de forma eficaz, clique neste link e saiba como utilizar o fórum da Alura.
+
+https://cursos.alura.com.br/comunicando-erros-e-tirando-duvidas-em-foruns-c19
+
+Não tem dúvidas? Que tal ajudar alguém no fórum?
+: )
+
+@@07
+O que aprendemos?
+
+Nesta aula:
+Adicionamos um endpoint com método Post para criar uma nova personalidade e salvá-la no banco de dados;
+Adicionamos um endpoint com método Delete para deletar uma personalidade e removê-la do banco de dados;
+Adicionamos um endpoint com método Put para atualizar uma personalidade e alterá-la no banco de dados.
+Na próxima aula:
+Vamos adicionar informações no header informando o tipo de conteúdo da resposta, criar um middleware para evitar duplicidade de código e integrar front-end React para consumir nossa API Go!
