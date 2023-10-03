@@ -1486,3 +1486,23 @@ Conclusão
 [00:43] Para finalizar, vimos que conseguimos conectar essa nossa API com um front-end React. Passamos ali por políticas de mesma origem, criamos um middleware para retornar um content-type, informar qual o content-type no cabeçalho, na requisição. Isso ficou simplesmente muito legal.
 
 [01:01] Eu espero que você tenha gostado muito desse treinamento. Foi uma honra ter você até este momento. Não se esqueça de dar a nota do curso, falar o que você mais gostou para que criemos uma plataforma ainda mais incrível e você aprenda e se desenvolva ainda mais. Bons estudos, não pare por aqui, refaça essa aplicação, continue estudando e nos encontramos no próximo treinamento.
+
+@@12
+Parabéns
+
+Chegou o momento de celebrar sua grande conquista!
+
+Neste treinamento, todas as barreiras foram vencidas e você aprofundou ainda mais seus conhecimentos com a linguagem Go.
+
+Você desenvolveu uma API Rest do zero, criando rotas, endpoints, modelos e conectou sua aplicação com um banco de dados Postgres por meio do Docker. Além disso, usou um módulo de ORM e roteador para tornar a aplicação mais escalável, o CRUD completo de um recurso e para fechar com chave de ouro, integrou o back-end Go com um front-end React, configurando o Cors.
+
+Quanta coisa legal!
+
+Mostre a aplicação que desenvolveu para outras pessoas e marque a Alura nas redes sociais com a #alurago, porque vamos olhar seu projeto e curtir o que fez. Para me seguir no Instagram ou Linkedin.
+
+Agora, dê uma nota para o curso, pegue seu certificado e comemore bastante essa conquista.
+"Faço da dificuldade a minha motivação.” (Charlie Brown Jr)
+
+Parabéns!!!
+
+Guilherme Lima
